@@ -3,9 +3,10 @@ cmake_minimum_required(VERSION 3.12)
 ###########################################
 ##	Project settings
 ###########################################
-set(PROJECT_NAME "my_lib")
+set(PROJECT_NAME "bare_FFeeT")
 
 project(${PROJECT_NAME})
+set(ExeName "bare_FFeeT")
 
 ###########################################
 ##	CONAN settings
@@ -48,5 +49,71 @@ endif()
 ###########################################
 ##	PROJECT
 ###########################################
+list(APPEND DATASOURCES
+
+		"${CMAKE_SOURCE_DIR}/inc/datasources/bare_FFeeT.h"
+
+)
+					
+if(MSVC)
+	# für chaiscript
+  add_definitions(/bigobj)
+  
+  #add_definitions(/bigobj /permissive- /Zc:twoPhase-)
+  # Note on MSVC compiler flags.
+  # The code base selective disables warnings as necessary when the compiler is complaining too much
+  # about something that is perfectly valid, or there is simply no technical way around it
+  # This particular warning, C4503 is in regards to the decorated names that MSVC generates internally.
+  # The error did not come up until the move to C++11, but the compiler doesn't give enough information
+  # to determine where the error is coming from, and the internet provides no real information for
+  # how to workaround or fix the error. So I'm disabling it globally.
+  #add_definitions(/wd4503)
+else()
+  add_definitions(-Wall -Wextra -Wconversion -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wcast-qual -Wunused -Woverloaded-virtual -Wno-noexcept-type -Wpedantic ${CPP17_FLAG})
+
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_definitions(-Weverything -Wno-c++98-compat-pedantic  -Wno-c++98-compat -Wno-documentation -Wno-switch-enum -Wno-weak-vtables -Wno-missing-prototypes -Wno-padded -Wno-missing-noreturn -Wno-exit-time-destructors -Wno-documentation-unknown-command -Wno-unused-template -Wno-undef )
+  else()
+    add_definitions(-Wnoexcept)
+  endif()
+
+  if(APPLE)
+    add_definitions(-Wno-sign-compare)
+  endif()
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  option(USE_LIBCXX "Use clang's libcxx" TRUE)
+
+  if(USE_LIBCXX)
+    add_definitions(-stdlib=libc++)
+    set(LINKER_FLAGS "${LINKER_FLAGS} ${CPP17_FLAG} -stdlib=libc++")
+  else()
+    set(LINKER_FLAGS "${LINKER_FLAGS} ${CPP17_FLAG}")
+  endif()
+elseif(CMAKE_COMPILER_IS_GNUCC)
+  set(LINKER_FLAGS "${LINKER_FLAGS} ${CPP17_FLAG}")
+endif()
+
+add_definitions(-DNOMINMAX )
+add_definitions(-DSIMTEC_USER_MODE -DWIN32_LEAN_AND_MEAN) 
+				
+add_executable(${ExeName}  WIN32 main.cpp
+                                 ${DATASOURCES}
+							)
+							
+source_group("DataSources" FILES ${DATASOURCES})
+
+# add the binary tree to the search path for include files
+# so that we will find HyLaAConfig.h
+include_directories("${CMAKE_BINARY_DIR}")
+
+# to ba able to do something like this: #include <application/hylaa.h>
+include_directories("${CMAKE_SOURCE_DIR}")
+
 add_subdirectory(examples)
 add_subdirectory(tests)
+target_compile_features(${ExeName} PUBLIC cxx_std_14)
+target_link_libraries(${ExeName} CONAN_PKG::eigen)
+
+set_target_properties(${ExeName} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")

@@ -1,8 +1,9 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
-#include "my_lib/my_lib.h"
 
+
+/*// EXAMPLE TEST
 SCENARIO("My_Class can add integers to itself", "[addition]")
 {
     GIVEN("a my_class with initial value 5")
@@ -25,4 +26,4 @@ SCENARIO("My_Class can add integers to itself", "[addition]")
             }
         }
     }
-}
+}*/
